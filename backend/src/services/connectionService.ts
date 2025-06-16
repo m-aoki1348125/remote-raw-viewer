@@ -244,6 +244,10 @@ class ConnectionService {
     return this.sshService;
   }
 
+  getSSHClient(id: string): NodeSSH | null {
+    return this.sshService.getClient(id);
+  }
+
   isSSHConnected(id: string): boolean {
     return this.sshService.isConnected(id);
   }

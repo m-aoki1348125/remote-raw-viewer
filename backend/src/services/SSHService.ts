@@ -254,6 +254,17 @@ export class SSHService {
     }
   }
 
+  // Get SSH client for a connection
+  getClient(connectionId: string): NodeSSH | null {
+    return this.connections.get(connectionId) || null;
+  }
+
+  // Check if connection is active
+  isConnected(connectionId: string): boolean {
+    const ssh = this.connections.get(connectionId);
+    return ssh ? ssh.isConnected() : false;
+  }
+
   // Cleanup all connections
   dispose(): void {
     for (const [connectionId, ssh] of this.connections) {

@@ -435,7 +435,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 onClick={decreaseThumbnailSize}
                 disabled={thumbnailSize === 'tiny'}
                 className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
-                title="-"
+                title="Decrease thumbnail size"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -455,7 +455,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 onClick={increaseThumbnailSize}
                 disabled={thumbnailSize === 'giant'}
                 className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
-                title="+"
+                title="Increase thumbnail size"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -463,35 +463,38 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
               </button>
             </div>
             
-            {/* Compact Selection */}
-            {selectedImages.size > 0 ? (
-              <div className="flex items-center space-x-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
-                <span className="text-xs text-blue-700">
-                  {selectedImages.size}
-                </span>
+            {/* Selection Controls */}
+              {selectedImages.size > 0 ? (
+                <div className="flex items-center space-x-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
+                  <span className="text-xs text-blue-700">
+                    {selectedImages.size} selected
+                  </span>
+                  <button
+                    onClick={handleDownloadSelected}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                    title={`Download ${selectedImages.size} selected image(s)`}
+                  >
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
+                    title="Clear selection"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : filteredImages.length > 0 && (
                 <button
-                  onClick={handleDownloadSelected}
-                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Download
-                </button>
-                <button
-                  onClick={clearSelection}
+                  onClick={selectAllImages}
                   className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
+                  title="Select all images"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : filteredImages.length > 0 && (
-              <button
-                onClick={selectAllImages}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
-              >
                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
