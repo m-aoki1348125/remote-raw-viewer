@@ -198,6 +198,27 @@ export const connectionController = {
     }
   },
 
+  // POST /api/connections/test-direct
+  testConnectionDirect: async (req: Request, res: Response) => {
+    try {
+      const data: ConnectionFormData = req.body;
+      
+      const result = await connectionService.testConnectionDirect(data);
+      
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      logger.error('Error testing connection directly:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error'
+      });
+    }
+  },
+
   // POST /api/connections/:id/connect
   connectSSH: async (req: Request, res: Response) => {
     try {

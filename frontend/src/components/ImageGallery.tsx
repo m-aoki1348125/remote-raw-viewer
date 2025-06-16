@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { directoryApi, downloadApi } from '../services/api';
 import { DirectoryItem, ThumbnailData } from '../types/directory';
+import SearchBox from './SearchBox';
+import { useToast } from '../hooks/useToast';
+import LoadingSpinner from './ui/LoadingSpinner';
+import useAccessibility from '../hooks/useAccessibility';
 
 interface ImageGalleryProps {
   connectionId: string;
@@ -21,24 +25,79 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   onPathChange
 }) => {
   const [images, setImages] = useState<ImageWithThumbnail[]>([]);
+  const [filteredImages, setFilteredImages] = useState<ImageWithThumbnail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [thumbnailSize, setThumbnailSize] = useState<'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge'>('medium');
+  const [thumbnailSize, setThumbnailSize] = useState<'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'huge' | 'massive' | 'giant'>('medium');
+  const [searchQuery, setSearchQuery] = useState('');
+  const { showSuccess, showError } = useToast();
+  const { announce, prefersReducedMotion } = useAccessibility();
+
+  // Debug logging
   
-  // Define grid configurations directly
+  // Define grid configurations with aspect-ratio-consistent square thumbnails
   const sizeConfigs = {
-    small: { cols: 'grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16', size: 'w-12 h-12' },
-    medium: { cols: 'grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12', size: 'w-16 h-16' },
-    large: { cols: 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10', size: 'w-20 h-20' },
-    xlarge: { cols: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8', size: 'w-24 h-24' },
-    xxlarge: { cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6', size: 'w-32 h-32' }
+    tiny: { 
+      cols: 'grid-cols-8 sm:grid-cols-12 md:grid-cols-16 lg:grid-cols-20 xl:grid-cols-24 2xl:grid-cols-32', 
+      containerClass: 'w-16 h-16',
+      imageClass: 'thumbnail-tiny',
+      labelClass: 'text-xs'
+    },
+    small: { 
+      cols: 'grid-cols-6 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-16 xl:grid-cols-20 2xl:grid-cols-24', 
+      containerClass: 'w-20 h-20',
+      imageClass: 'thumbnail-small',
+      labelClass: 'text-xs'
+    },
+    medium: { 
+      cols: 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-16 2xl:grid-cols-20', 
+      containerClass: 'w-24 h-24',
+      imageClass: 'thumbnail-medium',
+      labelClass: 'text-sm'
+    },
+    large: { 
+      cols: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 2xl:grid-cols-16', 
+      containerClass: 'w-32 h-32',
+      imageClass: 'thumbnail-large',
+      labelClass: 'text-sm'
+    },
+    xlarge: { 
+      cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12', 
+      containerClass: 'w-40 h-40',
+      imageClass: 'thumbnail-xlarge',
+      labelClass: 'text-sm'
+    },
+    xxlarge: { 
+      cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8', 
+      containerClass: 'w-48 h-48',
+      imageClass: 'thumbnail-xxlarge',
+      labelClass: 'text-base'
+    },
+    huge: { 
+      cols: 'grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6', 
+      containerClass: 'w-64 h-64',
+      imageClass: 'thumbnail-huge',
+      labelClass: 'text-base'
+    },
+    massive: { 
+      cols: 'grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4', 
+      containerClass: 'w-80 h-80',
+      imageClass: 'thumbnail-massive',
+      labelClass: 'text-lg'
+    },
+    giant: { 
+      cols: 'grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3', 
+      containerClass: 'w-96 h-96',
+      imageClass: 'thumbnail-giant',
+      labelClass: 'text-lg'
+    }
   };
   
   const currentConfig = sizeConfigs[thumbnailSize];
 
   const increaseThumbnailSize = () => {
-    const sizes = ['small', 'medium', 'large', 'xlarge', 'xxlarge'] as const;
+    const sizes = ['tiny', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge', 'massive', 'giant'] as const;
     const currentIndex = sizes.indexOf(thumbnailSize);
     if (currentIndex < sizes.length - 1) {
       setThumbnailSize(sizes[currentIndex + 1]);
@@ -46,7 +105,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   };
 
   const decreaseThumbnailSize = () => {
-    const sizes = ['small', 'medium', 'large', 'xlarge', 'xxlarge'] as const;
+    const sizes = ['tiny', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge', 'massive', 'giant'] as const;
     const currentIndex = sizes.indexOf(thumbnailSize);
     if (currentIndex > 0) {
       setThumbnailSize(sizes[currentIndex - 1]);
@@ -65,30 +124,37 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     setImages([]);
 
     try {
-      const result = await directoryApi.getImages(connectionId, currentPath);
-      const imagesWithThumbnails = result.images.map(image => ({
-        ...image,
+      // Load all directory items (including directories and images)
+      const result = await directoryApi.list(connectionId, currentPath);
+      const itemsWithThumbnails = result.items.map(item => ({
+        ...item,
         thumbnailData: undefined,
         isLoadingThumbnail: false
       }));
       
-      setImages(imagesWithThumbnails);
+      setImages(itemsWithThumbnails);
+      setFilteredImages(itemsWithThumbnails);
+      announce(`Loaded ${itemsWithThumbnails.length} items from ${currentPath}`, 'polite');
 
-      // Load thumbnails lazily
-      imagesWithThumbnails.forEach((image, index) => {
-        setTimeout(() => loadThumbnail(image, index), index * 100);
+      // Load thumbnails only for image files
+      const imageItems = itemsWithThumbnails.filter(item => item.type === 'file' && item.isImage);
+      imageItems.forEach((image, index) => {
+        const globalIndex = itemsWithThumbnails.findIndex(item => item.path === image.path);
+        setTimeout(() => loadThumbnail(image, globalIndex), index * 50);
       });
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load images';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load directory';
       setError(errorMessage);
-      console.error('Error loading images:', error);
+      showError('Load Failed', errorMessage);
+      console.error('Error loading directory:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadThumbnail = useCallback(async (image: DirectoryItem, index: number) => {
+    
     setImages(prevImages => 
       prevImages.map((img, i) => 
         i === index ? { ...img, isLoadingThumbnail: true } : img
@@ -97,6 +163,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
     try {
       const thumbnailData = await directoryApi.getThumbnail(connectionId, image.path);
+      console.log(`Thumbnail loaded for ${image.name}:`, thumbnailData.success);
       
       setImages(prevImages => 
         prevImages.map((img, i) => 
@@ -126,10 +193,26 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   }, [connectionId]);
 
   const handleImageClick = (image: ImageWithThumbnail) => {
+    if (image.type === 'directory') {
+      // Single click on directory does nothing
+      return;
+    }
     onImageSelect(image);
   };
 
-  const handleImageSelect = (imagePath: string, event: React.MouseEvent) => {
+  const handleItemDoubleClick = useCallback((item: ImageWithThumbnail) => {
+    if (item.type === 'directory') {
+      // Double click on directory navigates to it
+      if (onPathChange) {
+        onPathChange(item.path);
+      }
+    } else if (item.isImage) {
+      // Double click on image opens modal
+      onImageSelect(item);
+    }
+  }, [onPathChange, onImageSelect]);
+
+  const handleImageSelect = useCallback((imagePath: string, event: React.MouseEvent) => {
     event.stopPropagation();
     
     setSelectedImages(prev => {
@@ -141,21 +224,21 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       }
       return newSelected;
     });
-  };
+  }, []);
 
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  }, []);
 
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp * 1000).toLocaleDateString();
-  };
+  // const formatDate = (timestamp: number): string => {
+  //   return new Date(timestamp * 1000).toLocaleDateString();
+  // };
 
-  const handleDownloadSelected = async () => {
+  const handleDownloadSelected = useCallback(async () => {
     if (selectedImages.size === 0) return;
 
     try {
@@ -163,48 +246,108 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       
       if (filePaths.length === 1) {
         await downloadApi.downloadSingle(connectionId, filePaths[0]);
+        showSuccess('Download Started', 'Single image download initiated');
       } else {
         await downloadApi.downloadMultiple(connectionId, filePaths);
+        showSuccess('Download Started', `${filePaths.length} images download initiated`);
       }
     } catch (error) {
       console.error('Error downloading images:', error);
+      showError('Download Failed', 'Failed to start download');
     }
-  };
+  }, [selectedImages, connectionId, showSuccess, showError]);
 
-  const selectAllImages = () => {
-    setSelectedImages(new Set(images.map(img => img.path)));
-  };
+  const selectAllImages = useCallback(() => {
+    setSelectedImages(new Set(filteredImages.map(img => img.path)));
+    showSuccess('Selected All', `${filteredImages.length} images selected`);
+  }, [filteredImages, showSuccess]);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedImages(new Set());
-  };
+  }, []);
 
-  const getPathSegments = (path: string) => {
-    if (path === '/' || path === '') return [{ name: 'root', path: '/' }];
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setFilteredImages(images);
+    } else {
+      const filtered = images.filter(item => 
+        item.name.toLowerCase().includes(query.toLowerCase()) ||
+        (item.extension && item.extension.toLowerCase().includes(query.toLowerCase())) ||
+        (item.type === 'directory' && item.name.toLowerCase().includes(query.toLowerCase()))
+      );
+      setFilteredImages(filtered);
+      if (query.trim()) {
+        announce(`Found ${filtered.length} matching items`, 'polite');
+      }
+    }
+  }, [images, announce]);
+
+  useEffect(() => {
+    handleSearch(searchQuery);
+  }, [images, searchQuery, handleSearch]);
+
+  const pathSegments = useMemo(() => {
+    if (currentPath === '/' || currentPath === '') return [{ name: 'root', path: '/' }];
     
-    const segments = path.split('/').filter(Boolean);
+    const segments = currentPath.split('/').filter(Boolean);
     const result = [{ name: 'root', path: '/' }];
     
-    let currentPath = '';
+    let path = '';
     segments.forEach(segment => {
-      currentPath += '/' + segment;
-      result.push({ name: segment, path: currentPath });
+      path += '/' + segment;
+      result.push({ name: segment, path });
     });
     
     return result;
-  };
+  }, [currentPath]);
 
-  const navigateToPath = (path: string) => {
+  const navigateToPath = useCallback((path: string) => {
     if (onPathChange) {
       onPathChange(path);
     }
-  };
+  }, [onPathChange]);
 
-  const navigateUp = () => {
+  const navigateUp = useCallback(() => {
     if (currentPath === '/' || currentPath === '') return;
     
     const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
     navigateToPath(parentPath);
+  }, [currentPath, navigateToPath]);
+
+  const getImageSrc = (item: ImageWithThumbnail): string => {
+    if (!item.thumbnailData?.thumbnail_base64) {
+      return '';
+    }
+
+    const ext = item.extension?.toLowerCase() || '';
+    
+    // Determine MIME type based on file extension
+    let mimeType: string;
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        mimeType = 'image/jpeg';
+        break;
+      case 'png':
+        mimeType = 'image/png';
+        break;
+      case 'gif':
+        mimeType = 'image/gif';
+        break;
+      case 'webp':
+        mimeType = 'image/webp';
+        break;
+      case 'raw':
+        // RAW images converted to PNG thumbnails
+        mimeType = 'image/png';
+        break;
+      default:
+        // Fallback to SVG for placeholders
+        mimeType = 'image/svg+xml';
+    }
+    
+    return `data:${mimeType};base64,${item.thumbnailData.thumbnail_base64}`;
   };
 
   if (error) {
@@ -217,178 +360,339 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
       <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
-        {/* Path Navigation */}
+        {/* Enhanced Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            <h3 className="text-sm font-medium text-gray-900">Images</h3>
+            <div className="w-5 h-5 bg-green-600 rounded flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-semibold text-gray-900">Directory Browser</h3>
             <button
               onClick={navigateUp}
               disabled={currentPath === '/' || currentPath === ''}
-              className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed"
-              title="Go up one level"
+              className="inline-flex items-center justify-center w-6 h-6 text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-300 disabled:cursor-not-allowed rounded transition-colors"
+              title="Up"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
             </button>
           </div>
-          <span className="text-sm text-gray-600">({images.length} items)</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-gray-600">
+              {filteredImages.length}/{images.length} items
+            </span>
+            <span className="text-xs text-gray-500">
+              ({filteredImages.filter(i => i.type === 'directory').length} folders, {filteredImages.filter(i => i.isImage).length} images)
+            </span>
+          </div>
         </div>
         
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center space-x-1 text-xs text-gray-600 mb-2">
-          {getPathSegments(currentPath).map((segment, index, array) => (
+        {/* Compact Breadcrumb */}
+        <div className="flex items-center space-x-1 mb-2 text-xs">
+          {pathSegments.map((segment, index, array) => (
             <React.Fragment key={segment.path}>
               <button
                 onClick={() => navigateToPath(segment.path)}
-                className="hover:text-blue-600 hover:underline"
+                className={`px-1.5 py-0.5 rounded transition-colors ${
+                  index === array.length - 1
+                    ? 'text-green-700 bg-green-100 font-medium'
+                    : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                }`}
               >
-                {segment.name}
+                {segment.name === 'root' ? '🏠' : segment.name}
               </button>
               {index < array.length - 1 && (
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
+                <span className="text-gray-400">/</span>
               )}
             </React.Fragment>
           ))}
         </div>
         
-        {/* Selection Controls */}
+        {/* Search Box */}
+        <div className="mb-2">
+          <SearchBox
+            placeholder="Search folders and images..."
+            onSearch={handleSearch}
+            className="w-full"
+            debounceMs={200}
+          />
+        </div>
+
+        {/* Compact Controls */}
         <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            Current: {currentPath}
+          <div className="flex items-center space-x-1 text-xs text-gray-600">
+            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-32">{currentPath}</span>
           </div>
-          <div className="flex items-center space-x-4">
-            {/* Simple Thumbnail Size Control */}
-            <div className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded">
-              <span className="text-xs text-gray-600">Size:</span>
+          <div className="flex items-center space-x-2">
+            {/* Compact Size Control */}
+            <div className="flex items-center space-x-1 bg-white border border-gray-200 px-2 py-1 rounded">
               <button
                 onClick={decreaseThumbnailSize}
-                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-50"
-                disabled={thumbnailSize === 'small'}
+                disabled={thumbnailSize === 'tiny'}
+                className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                title="-"
               >
-                -
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
               </button>
-              <span className="text-xs font-medium min-w-16 text-center">
-                {thumbnailSize.charAt(0).toUpperCase() + thumbnailSize.slice(1)}
-              </span>
+              <div className="flex items-center space-x-0.5">
+                {(['tiny', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge', 'massive', 'giant'] as const).map((size) => (
+                  <div
+                    key={size}
+                    className={`w-1 h-1 rounded-full ${
+                      size === thumbnailSize ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
               <button
                 onClick={increaseThumbnailSize}
-                className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-50"
-                disabled={thumbnailSize === 'xxlarge'}
+                disabled={thumbnailSize === 'giant'}
+                className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                title="+"
               >
-                +
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
               </button>
             </div>
             
-            {/* Selection buttons */}
-            <div className="flex items-center space-x-2">
-            {selectedImages.size > 0 && (
-              <>
-                <span className="text-sm text-blue-600">
-                  {selectedImages.size} selected
+            {/* Compact Selection */}
+            {selectedImages.size > 0 ? (
+              <div className="flex items-center space-x-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
+                <span className="text-xs text-blue-700">
+                  {selectedImages.size}
                 </span>
                 <button
                   onClick={handleDownloadSelected}
-                  className="px-2 py-1 text-xs font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700"
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
                 >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                   Download
                 </button>
                 <button
                   onClick={clearSelection}
-                  className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
                 >
-                  Clear
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-              </>
-            )}
-            
-            {images.length > 0 && selectedImages.size === 0 && (
+              </div>
+            ) : filteredImages.length > 0 && (
               <button
                 onClick={selectAllImages}
-                className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded transition-colors"
               >
-                Select All
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                All
               </button>
             )}
-            </div>
           </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="p-8 text-center">
-          <div className="inline-block w-8 h-8 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-2 text-sm text-gray-600">Loading images...</p>
+        <div className="p-8">
+          <LoadingSpinner 
+            size="large" 
+            message="Loading images..." 
+            reduceMotion={prefersReducedMotion()}
+          />
         </div>
-      ) : images.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <p className="mt-2 text-sm">No images found in this directory</p>
+      ) : filteredImages.length === 0 ? (
+        <div className="p-8 text-center space-y-3">
+          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-gray-600">
+              {searchQuery ? 'No matching items' : 'No items found'}
+            </p>
+            <p className="text-sm text-gray-500">
+              {searchQuery ? `No folders or images match "${searchQuery}"` : 'Directory is empty'}
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="p-4">
-          <div className={`grid ${currentConfig.cols} gap-4`}>
-            {images.map((image) => (
+        <div className="p-3">
+          <div 
+            className={`grid ${currentConfig.cols} gap-2`}
+            role="grid"
+            aria-label={`Directory view: ${filteredImages.length} items`}
+          >
+            {filteredImages.map((item, index) => (
               <div
-                key={image.path}
-                className={`relative group cursor-pointer border-2 rounded-lg overflow-hidden hover:shadow-lg transition-all ${
-                  selectedImages.has(image.path)
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleImageClick(image)}
+                key={item.path}
+                className={`thumbnail-container relative group cursor-pointer rounded-lg overflow-hidden border ${
+                  selectedImages.has(item.path)
+                    ? 'border-blue-500 shadow-md'
+                    : 'border-gray-200 hover:border-blue-300'
+                } ${item.type === 'directory' ? 'bg-blue-50' : ''}`}
+                onClick={() => handleImageClick(item)}
+                onDoubleClick={() => handleItemDoubleClick(item)}
+                role="gridcell"
+                tabIndex={0}
+                aria-label={`${item.type === 'directory' ? 'Folder' : 'File'} ${index + 1} of ${filteredImages.length}: ${item.name}, ${formatFileSize(item.size)}${selectedImages.has(item.path) ? ', selected' : ''}`}
+                aria-selected={selectedImages.has(item.path)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (item.type === 'directory') {
+                      handleItemDoubleClick(item);
+                    } else {
+                      handleImageClick(item);
+                    }
+                  }
+                }}
               >
-                {/* Selection checkbox */}
-                <div className="absolute top-2 left-2 z-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedImages.has(image.path)}
-                    onChange={(e) => handleImageSelect(image.path, e as any)}
-                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-                {/* Thumbnail */}
-                <div className={`${currentConfig.size} bg-gray-100 flex items-center justify-center mx-auto`}>
-                  {image.isLoadingThumbnail ? (
-                    <div className="w-6 h-6 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : image.thumbnailData?.success && image.thumbnailData.thumbnail_base64 ? (
-                    <img
-                      src={`data:image/jpeg;base64,${image.thumbnailData.thumbnail_base64}`}
-                      alt={image.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-center p-2">
-                      <svg className="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-xs text-gray-500 mt-1">No preview</p>
+                {/* Compact Selection Checkbox - Only for files */}
+                {item.type === 'file' && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <div className={`w-4 h-4 rounded-md transition-all duration-200 ${
+                      selectedImages.has(item.path)
+                        ? 'bg-blue-600 shadow-md'
+                        : 'bg-white/90 border border-gray-300 hover:bg-white'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedImages.has(item.path)}
+                        onChange={(e) => handleImageSelect(item.path, e as any)}
+                        className="w-full h-full opacity-0 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Select file ${item.name}`}
+                      />
+                      {selectedImages.has(item.path) && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* Enhanced Square Thumbnail */}
+                <div className={`${currentConfig.containerClass} bg-gray-100 flex flex-col mx-auto relative overflow-hidden rounded-lg`}>
+                  {/* Square Image Area */}
+                  <div className="relative w-full flex-1 bg-gray-50 overflow-hidden">
+                    {item.type === 'directory' ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
+                        <div className="w-1/2 h-1/2 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                          <svg className="w-1/2 h-1/2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                    ) : item.isLoadingThumbnail ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-6 h-6 border-2 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+                          <span className={`${currentConfig.labelClass} text-gray-600 font-medium`}>Loading</span>
+                        </div>
+                      </div>
+                    ) : item.thumbnailData?.success && item.thumbnailData.thumbnail_base64 ? (
+                      <>
+                        {/* Debug: Log what we're rendering */}
+                        {console.log(`Rendering image for ${item.name}:`, { 
+                          hasData: !!item.thumbnailData?.thumbnail_base64,
+                          success: item.thumbnailData?.success,
+                          src: getImageSrc(item).substring(0, 50) + '...'
+                        })}
+                        <img
+                          src={getImageSrc(item)}
+                          alt={item.name}
+                          className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${currentConfig.imageClass} ${item.extension === 'raw' ? 'raw-thumbnail' : ''}`}
+                          onLoad={() => console.log(`Image loaded successfully for ${item.name}`)}
+                          onError={(e) => {
+                            console.error(`Image load error for ${item.name}`);
+                            // Fallback to placeholder on image load error
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        {/* Aspect ratio indicator */}
+                        <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          {item.extension?.toUpperCase()}
+                        </div>
+                        {/* Fallback icon for failed image loads */}
+                        <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center bg-gray-200">
+                          <div className="w-1/3 h-1/3 bg-gray-300 rounded flex items-center justify-center">
+                            <svg className="w-1/2 h-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                        <div className="w-1/3 h-1/3 bg-gray-300 rounded flex items-center justify-center">
+                          {item.isImage ? (
+                            <svg className="w-1/2 h-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-1/2 h-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Enhanced Label Area */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-1 py-1 border-t border-gray-200">
+                    <div className={`${currentConfig.labelClass} text-gray-700 font-medium truncate text-center leading-tight`} title={item.name}>
+                      {item.name}
+                    </div>
+                    {item.type === 'file' && (
+                      <div className="text-xs text-gray-500 text-center">
+                        {formatFileSize(item.size)}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Image info overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-2 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                  <p className="text-xs font-medium truncate" title={image.name}>
-                    {image.name}
-                  </p>
-                  <p className="text-xs opacity-75">
-                    {formatFileSize(image.size)} • {formatDate(image.modified)}
-                  </p>
-                </div>
+                {/* Hover Info - Only for Directories */}
+                {item.type === 'directory' && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-blue-600/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <p className="text-xs text-center">
+                      Double-click to open
+                    </p>
+                  </div>
+                )}
 
-                {/* RAW indicator */}
-                {image.extension === '.raw' && (
-                  <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded">
-                    RAW
+                {/* Compact RAW Indicator */}
+                {item.extension === 'raw' && (
+                  <div className="absolute top-1 right-1 z-10">
+                    <div className="bg-purple-600 text-white text-xs font-bold px-1 py-0.5 rounded-full">
+                      RAW
+                    </div>
+                  </div>
+                )}
+
+                {/* Directory Indicator */}
+                {item.type === 'directory' && (
+                  <div className="absolute top-1 right-1 z-10">
+                    <div className="bg-blue-600 text-white text-xs font-bold px-1 py-0.5 rounded-full">
+                      📁
+                    </div>
                   </div>
                 )}
               </div>

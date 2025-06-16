@@ -2,10 +2,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { SSHConnection, ConnectionFormData, ConnectionTestResult } from '../types/connection';
 import { NodeSSH } from 'node-ssh';
 import { logger } from '../utils/logger';
+import { SSHService } from './SSHService';
 
 class ConnectionService {
   private connections: Map<string, SSHConnection> = new Map();
   private sshClients: Map<string, NodeSSH> = new Map();
+  private sshService: SSHService = new SSHService();
 
   getAllConnections(): SSHConnection[] {
     return Array.from(this.connections.values()).map(conn => ({
@@ -113,40 +115,51 @@ class ConnectionService {
       throw new Error(`Connection with id '${id}' not found`);
     }
 
+    return this.testConnectionDirect({
+      name: connection.name,
+      host: connection.host,
+      port: connection.port,
+      username: connection.username,
+      password: connection.password || '',
+      privateKey: connection.privateKey || '',
+      authMethod: connection.password ? 'password' : 'privateKey'
+    });
+  }
+
+  async testConnectionDirect(data: ConnectionFormData): Promise<ConnectionTestResult> {
     const startTime = Date.now();
     
     try {
-      const ssh = new NodeSSH();
-      
-      const connectOptions: any = {
-        host: connection.host,
-        port: connection.port,
-        username: connection.username
+      const config = {
+        host: data.host,
+        port: data.port,
+        username: data.username,
+        password: data.authMethod === 'password' ? data.password || '' : ''
       };
 
-      if (connection.password) {
-        connectOptions.password = connection.password;
-      } else if (connection.privateKey) {
-        connectOptions.privateKey = connection.privateKey;
-      }
-
-      await ssh.connect(connectOptions);
-      await ssh.dispose();
-
+      const success = await this.sshService.testConnection(config);
       const latency = Date.now() - startTime;
       
-      logger.info(`Connection test successful for ${connection.name}: ${latency}ms`);
-      
-      return {
-        success: true,
-        message: `Connection successful to ${connection.host}:${connection.port}`,
-        latency
-      };
+      if (success) {
+        logger.info(`Connection test successful for ${data.host}:${data.port}: ${latency}ms`);
+        return {
+          success: true,
+          message: `Connection successful to ${data.host}:${data.port}`,
+          latency
+        };
+      } else {
+        logger.warn(`Connection test failed for ${data.host}:${data.port}`);
+        return {
+          success: false,
+          message: `Connection failed to ${data.host}:${data.port}`,
+          latency
+        };
+      }
     } catch (error) {
       const latency = Date.now() - startTime;
       const message = error instanceof Error ? error.message : 'Unknown error';
       
-      logger.warn(`Connection test failed for ${connection.name}: ${message}`);
+      logger.warn(`Connection test failed for ${data.host}:${data.port}: ${message}`);
       
       return {
         success: false,
@@ -167,24 +180,14 @@ class ConnectionService {
     }
 
     try {
-      const ssh = new NodeSSH();
-      
-      const connectOptions: any = {
+      const config = {
         host: connection.host,
         port: connection.port,
-        username: connection.username
+        username: connection.username,
+        password: connection.password || ''
       };
 
-      if (connection.password) {
-        connectOptions.password = connection.password;
-      } else if (connection.privateKey) {
-        connectOptions.privateKey = connection.privateKey;
-      }
-
-      await ssh.connect(connectOptions);
-      
-      // Store SSH client for later use
-      this.sshClients.set(id, ssh);
+      await this.sshService.connect(id, config);
       
       // Update connection status
       const updatedConnection = {
@@ -215,14 +218,10 @@ class ConnectionService {
       throw new Error(`Connection with id '${id}' not found`);
     }
 
-    const sshClient = this.sshClients.get(id);
-    if (sshClient) {
-      try {
-        await sshClient.dispose();
-      } catch (error) {
-        logger.warn(`Error disposing SSH client for ${connection.name}: ${error}`);
-      }
-      this.sshClients.delete(id);
+    try {
+      await this.sshService.disconnect(id);
+    } catch (error) {
+      logger.warn(`Error disconnecting SSH for ${connection.name}: ${error}`);
     }
 
     const updatedConnection = {
@@ -241,8 +240,12 @@ class ConnectionService {
     };
   }
 
-  getSSHClient(id: string): NodeSSH | null {
-    return this.sshClients.get(id) || null;
+  getSSHService(): SSHService {
+    return this.sshService;
+  }
+
+  isSSHConnected(id: string): boolean {
+    return this.sshService.isConnected(id);
   }
 }
 

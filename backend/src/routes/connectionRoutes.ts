@@ -12,6 +12,7 @@ router.delete('/connections/:id', connectionController.deleteConnection);
 
 // Connection operation routes
 router.post('/connections/:id/test', connectionController.testConnection);
+router.post('/connections/test-direct', connectionController.testConnectionDirect);
 router.post('/connections/:id/connect', connectionController.connectSSH);
 router.post('/connections/:id/disconnect', connectionController.disconnectSSH);
 

@@ -78,3 +78,40 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Python virtual environment
+venv/
+agent/venv/
+
+# Production specific files
+.env.production
+*.env
+
+# SSL certificates and keys
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+certs/
+
+# SSH keys
+*.pub
+*_rsa
+*_ed25519
+ssh-keys/
+keys/
+
+# Application data
+data/
+backups/
+uploads/
+
+# Docker override files
+docker-compose.override.yml
+
+# Installation logs
+install-*.log
+
+# Local development overrides
+.env.override

@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Enhanced thumbnail image styles for perfect square display */
+@layer utilities {
+  /* Base thumbnail classes with object-cover for square cropping */
+  .thumbnail-tiny,
+  .thumbnail-small,
+  .thumbnail-medium,
+  .thumbnail-large,
+  .thumbnail-xlarge,
+  .thumbnail-xxlarge,
+  .thumbnail-huge,
+  .thumbnail-massive,
+  .thumbnail-giant {
+    @apply object-cover;
+  }
+
+  /* Hover effects for better visual feedback */
+  .thumbnail-tiny:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-small:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-medium:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-large:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-xlarge:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-xxlarge:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-huge:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-massive:hover { filter: brightness(1.1) contrast(1.05); }
+  .thumbnail-giant:hover { filter: brightness(1.1) contrast(1.05); }
+
+  /* Animation for smooth transitions */
+  .thumbnail-container {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .thumbnail-container:hover {
+    @apply shadow-lg;
+    transform: translateY(-2px);
+  }
+
+  /* RAW image specific styling */
+  .raw-thumbnail {
+    filter: grayscale(0) sepia(0.1) hue-rotate(0deg);
+  }
+
+  .raw-thumbnail:hover {
+    filter: grayscale(0) sepia(0.2) hue-rotate(10deg) brightness(1.1);
+  }
+}

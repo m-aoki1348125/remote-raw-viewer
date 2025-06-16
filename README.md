@@ -1,31 +1,199 @@
 # Remote Raw Viewer
 
-3-tier web application for securely browsing and viewing images stored on remote servers through SSH connections.
+🖼️ **Secure SSH-based image browser for remote servers with advanced thumbnail gallery**
 
-## Project Status
+Remote Raw Viewer is a production-ready web application that enables secure browsing and viewing of images stored on remote Linux servers through SSH connections. Perfect for Windows 11 clients accessing Ubuntu image servers with support for JPEG, PNG, GIF, WebP, and RAW image formats.
 
-✅ **ALL PHASES COMPLETE**: Full implementation with working features
+## ✨ Key Features
 
-### Current Implementation
+### 🔐 **Secure SSH Connectivity**
+- Real-time SSH connections to remote Ubuntu/Linux servers
+- Support for SSH key authentication and password authentication
+- Secure credential management with encrypted storage
 
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS (Port 3000)
-- **Backend**: Node.js + Express + TypeScript (Port 8000)  
-- **Agent**: Python 3.12 + Pillow for image processing
-- **Testing**: Jest (Frontend), Supertest (Backend), unittest (Agent)
+### 🖼️ **Advanced Image Gallery**
+- **Real image thumbnail display** with SSH-based image retrieval
+- **9-stage size control**: From tiny (8px) to giant (600px) thumbnails
+- **RAW image processing**: Automatic handling of 640x512 and perfect square RAW files
+- **Multi-format support**: JPEG, PNG, GIF, WebP, and RAW image formats
 
-## Features Implemented
+### 🎛️ **Intuitive User Interface**
+- **Fullscreen responsive design** optimized for 2K/4K displays
+- **Interactive directory navigation** with breadcrumb trails
+- **Real-time search** across files and directories
+- **Multi-select download** with batch operations
+- **Toast notifications** and keyboard shortcuts
 
-✅ **SSH Connection Management**: CRUD operations for server connections  
-✅ **Directory Tree Browsing**: Recursive directory navigation  
-✅ **Image Gallery**: Thumbnail grid with lazy loading  
-✅ **RAW Image Processing**: Support for 640x512 and perfect square formats  
-✅ **Image Preview**: Lightbox modal with metadata display  
-✅ **Download Functionality**: Single and multiple image downloads  
-✅ **Responsive UI**: Optimized for large image directories
+### 🚀 **Production Ready**
+- **Docker containerization** with HTTPS/SSL support
+- **Let's Encrypt integration** for automatic SSL certificates
+- **Comprehensive monitoring** with health checks and logging
+- **Auto-backup system** with configurable retention
 
-## Quick Start (WSL/Linux)
+## 🚀 Quick Installation
 
-### 1. Setup Dependencies
+### One-Command Installation
+
+```bash
+# Clone and install
+git clone https://github.com/your-repo/remote-raw-viewer.git
+cd remote-raw-viewer
+./install.sh
+```
+
+### Or Direct Installation
+
+```bash
+# Direct installation from web
+curl -sSL https://raw.githubusercontent.com/your-repo/remote-raw-viewer/main/install.sh | bash
+```
+
+The installation script will automatically:
+- Install Docker and Docker Compose
+- Set up SSL certificates (Let's Encrypt or self-signed)
+- Configure firewall rules
+- Deploy the application with HTTPS
+- Create monitoring and backup systems
+
+## 📋 System Requirements
+
+### Application Server (Remote Raw Viewer Host)
+- **OS**: Ubuntu 22.04 LTS, CentOS 8+, or RHEL 8+
+- **Resources**: 2 CPU cores, 4GB RAM, 20GB storage
+- **Network**: Internet access and SSH access to image servers
+- **Privileges**: Non-root user with sudo privileges
+
+### Image Server (Target Ubuntu Server)
+- **OS**: Ubuntu Server 16.04+
+- **Services**: OpenSSH Server enabled
+- **Tools**: `base64`, `ls`, `stat` commands (standard on most systems)
+- **Optional**: ImageMagick for enhanced RAW image processing
+
+### Client (Access)
+- **OS**: Windows 11 (or any modern OS)
+- **Browser**: Chrome 120+, Edge 120+, Firefox 115+
+- **Network**: HTTPS access to Application Server
+
+## 🔧 Configuration
+
+### Environment Configuration
+
+After installation, configure your environment:
+
+```bash
+# Edit production configuration
+nano /opt/remote-raw-viewer/.env.production
+```
+
+Key settings:
+- `APP_DOMAIN`: Your domain name
+- `SSL_CERT_PATH`: SSL certificate path
+- `SSH_KEYS_PATH`: SSH private keys directory
+
+### SSH Server Setup
+
+Configure your Ubuntu Image Server:
+
+```bash
+# Ensure SSH server is running
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+# Create image user (recommended)
+sudo useradd -m imageuser
+sudo mkdir -p /data/images
+sudo chown imageuser:imageuser /data/images
+
+# Optional: Install ImageMagick for RAW processing
+sudo apt install imagemagick
+```
+
+### SSL Certificate Setup
+
+The installation script handles SSL automatically, but you can also configure manually:
+
+```bash
+# Let's Encrypt certificate
+./scripts/setup-ssl.sh -d your-domain.com -e your-email@example.com
+
+# Self-signed certificate
+./scripts/setup-ssl.sh -d your-domain.com --self-signed
+```
+
+## 📖 Usage
+
+### 1. Access the Web Interface
+
+Navigate to `https://your-domain.com` in your browser.
+
+### 2. Add Image Server Connection
+
+1. Click **"Add Connection"**
+2. Configure connection:
+   - **Name**: Production Image Server
+   - **Host**: `192.168.1.100` (your Ubuntu server IP)
+   - **Port**: `22`
+   - **Username**: `imageuser`
+   - **Authentication**: SSH Key or Password
+
+### 3. Browse Images
+
+- **Navigate directories**: Click folders or use breadcrumb navigation
+- **Adjust thumbnail size**: Use +/- controls (9 size levels)
+- **Search files**: Type in the search box for instant filtering
+- **Select images**: Click checkboxes for multi-selection
+- **Download images**: Use download button for selected files
+
+### 4. Advanced Features
+
+- **Keyboard shortcuts**: Arrow keys for navigation, Space for selection
+- **Fullscreen mode**: Optimized for large displays and multiple monitors
+- **Performance monitoring**: Real-time performance metrics in UI
+- **Error handling**: Comprehensive error messages and recovery
+
+## 🛠️ Management
+
+### Service Management
+
+```bash
+# Check status
+docker-compose -f /opt/remote-raw-viewer/docker-compose.prod.yml ps
+
+# View logs
+docker-compose -f /opt/remote-raw-viewer/docker-compose.prod.yml logs -f
+
+# Restart services
+docker-compose -f /opt/remote-raw-viewer/docker-compose.prod.yml restart
+
+# Stop services
+docker-compose -f /opt/remote-raw-viewer/docker-compose.prod.yml down
+```
+
+### Updates
+
+```bash
+cd /opt/remote-raw-viewer
+git pull
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+### Backup
+
+Automatic backups are configured, but you can create manual backups:
+
+```bash
+# Manual backup
+/usr/local/bin/backup-remote-raw-viewer.sh
+
+# View backups
+ls -la /opt/backups/remote-raw-viewer/
+```
+
+## 🧪 Development Mode
+
+For development and testing:
+
+### Setup Dependencies
 
 ```bash
 # Install Python dependencies (one-time setup)
@@ -40,13 +208,13 @@ cd backend && npm install && cd ..
 cd frontend && npm install && cd ..
 ```
 
-### 2. Start Development Environment
+### Start Development Environment
 
 ```bash
-# Option A: Use the automated startup script
+# Use the automated startup script
 ./start-dev.sh
 
-# Option B: Start manually in separate terminals
+# Or start manually in separate terminals
 # Terminal 1: Backend
 cd backend && npm run dev
 
@@ -54,41 +222,13 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-### 3. Access the Application
+### Access Development Server
 
 - **Web Interface**: http://localhost:3000
 - **Backend API**: http://localhost:8000
-- **Health Check**: http://localhost:8000/health
+- **Test SSH Server**: Use `./setup-test-server-fixed.sh`
 
-## API Testing
-
-Test the agent functionality:
-
-```bash
-# Test agent commands
-./test-agent.sh
-
-# Manual agent testing
-cd agent && source venv/bin/activate
-
-# List directory contents
-PYTHONPATH=src python3 src/main.py list --path /path/to/images
-
-# Generate thumbnail
-PYTHONPATH=src python3 src/main.py thumbnail --path /path/to/image.raw
-
-# Get file metadata
-PYTHONPATH=src python3 src/main.py metadata --path /path/to/file
-```
-
-## Test Data
-
-Sample test files are available in `test-data/images/`:
-- `test_640x512.raw` - 640×512 grayscale RAW image (327,680 bytes)
-- `test_100x100.raw` - 100×100 perfect square RAW image (10,000 bytes)
-- `test.txt` - Text file for testing file filtering
-
-## Running Tests
+### Running Tests
 
 ```bash
 # Backend tests
@@ -101,48 +241,96 @@ cd frontend && npm test
 cd agent && source venv/bin/activate && PYTHONPATH=src python3 -m unittest discover tests/ -v
 ```
 
-## Development Notes
+## 📚 Documentation
 
-- **SSH Connections**: In development, connections will fail unless you have actual SSH servers configured
-- **Image Processing**: RAW images are processed as grayscale data
-- **Security**: All browser-server communication uses HTTPS in production
-- **Performance**: UI handles large directories (>1000 images) with lazy loading
+- **[Quick Start Guide](doc/QuickStartGuide.md)**: Fastest path to deployment
+- **[Production Deployment Guide](doc/ProductionDeploymentGuide.md)**: Comprehensive deployment instructions
+- **[Operational Readiness](doc/OperationalReadiness.md)**: Pre-deployment checklist
+- **[Requirements Specification](doc/RequirementsSpecification.md)**: Detailed technical requirements
 
-## File Structure
+## 🔧 Architecture
 
 ```
-├── backend/          # Express.js API server
-├── frontend/         # React web application  
-├── agent/           # Python CLI for remote operations
-├── doc/             # Requirements and implementation plans
-├── test-data/       # Sample files for testing
-├── start-dev.sh     # Development environment startup
-└── test-agent.sh    # Agent functionality testing
+[Windows 11 Client] --HTTPS--> [Remote Raw Viewer] --SSH--> [Ubuntu Image Server]
+       |                           |                              |
+   Web Browser                React Frontend +               Image Files
+   (Chrome/Edge)              Node.js Backend                (JPEG/PNG/RAW)
 ```
 
-## Technology Stack
+### Technology Stack
 
-| Component | Technologies |
-|-----------|-------------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Axios |
-| Backend | Node.js, Express, TypeScript, node-ssh, Winston |
-| Agent | Python 3.12, Pillow (PIL), argparse |
-| Testing | Jest, Supertest, unittest, @testing-library/react |
+- **Frontend**: React 18 + TypeScript + Tailwind CSS + Vite
+- **Backend**: Node.js + Express + TypeScript + node-ssh
+- **Infrastructure**: Docker + Nginx + Let's Encrypt
+- **Authentication**: SSH Key/Password authentication
+- **Security**: HTTPS, secure headers, firewall configuration
 
-## Next Steps
+## 🛡️ Security
 
-1. Configure actual SSH connections to remote servers
-2. Add authentication and user management
-3. Implement production deployment with Docker
-4. Add advanced image filtering and search capabilities
-5. Enable bulk operations and directory synchronization
+- **HTTPS encryption** for all client-server communication
+- **SSH key authentication** (recommended over passwords)
+- **Secure credential storage** with backend-only SSH access
+- **Firewall configuration** with minimal port exposure
+- **Security headers** configured in Nginx
+- **No client-side credential storage**
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**SSH Connection Failed**
+```bash
+# Test SSH connectivity
+ssh -i /opt/ssh-keys/imageserver_key imageuser@ubuntu-server
+
+# Check SSH service
+sudo systemctl status ssh
+```
+
+**SSL Certificate Issues**
+```bash
+# Verify certificate
+sudo openssl x509 -in /opt/ssl/cert.pem -text -noout
+
+# Renew Let's Encrypt certificate
+sudo certbot renew
+```
+
+**Application Not Starting**
+```bash
+# Check logs
+docker-compose -f /opt/remote-raw-viewer/docker-compose.prod.yml logs
+
+# Verify configuration
+cd /opt/remote-raw-viewer && docker-compose config
+```
+
+### Log Files
+
+- **Application logs**: `/opt/remote-raw-viewer/logs/`
+- **System logs**: `journalctl -u remote-raw-viewer.service -f`
+- **Installation logs**: `/tmp/install-*.log`
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## 📄 License
+
+[MIT License](LICENSE) - feel free to use this project for personal or commercial purposes.
+
+## 🆘 Support
+
+- **Documentation**: Check the `doc/` directory for comprehensive guides
+- **Issues**: Report bugs and feature requests via GitHub Issues
+- **Logs**: Check application logs in `/opt/remote-raw-viewer/logs/`
 
 ---
 
-🚀 **Status**: Core functionality implemented and tested
+**Made with ❤️ for secure remote image browsing**
 
-## Documentation
-
-- [Requirements Specification](doc/RequirementsSpecification.md)
-- [Implementation Plan](doc/ImplementationPlan.md)
-- [Project Guidelines](CLAUDE.md)
+🌟 **Star this repository if Remote Raw Viewer helped you manage your remote images securely!**

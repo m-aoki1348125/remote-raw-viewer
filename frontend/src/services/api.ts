@@ -45,6 +45,11 @@ export const connectionApi = {
     return response.data.data;
   },
 
+  testDirect: async (data: ConnectionFormData): Promise<ConnectionTestResult> => {
+    const response = await api.post('/connections/test-direct', data);
+    return response.data.data;
+  },
+
   connect: async (id: string): Promise<SSHConnection> => {
     const response = await api.post(`/connections/${id}/connect`);
     return response.data.data;
