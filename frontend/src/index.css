@@ -4,7 +4,7 @@
 
 /* Enhanced thumbnail image styles for perfect square display */
 @layer utilities {
-  /* Base thumbnail classes with object-cover for square cropping */
+  /* Base thumbnail classes with object-contain for full image display */
   .thumbnail-tiny,
   .thumbnail-small,
   .thumbnail-medium,
@@ -14,7 +14,17 @@
   .thumbnail-huge,
   .thumbnail-massive,
   .thumbnail-giant {
-    @apply object-cover;
+    @apply object-contain;
+  }
+
+  /* Fix for medium to xlarge sizes - ensure proper aspect ratio */
+  .thumbnail-medium,
+  .thumbnail-large,
+  .thumbnail-xlarge {
+    object-fit: contain !important;
+    object-position: center !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 
   /* Hover effects for better visual feedback */
@@ -46,4 +56,28 @@
   .raw-thumbnail:hover {
     filter: grayscale(0) sepia(0.2) hue-rotate(10deg) brightness(1.1);
   }
+
+  /* Custom scrollbar styling for image gallery */
+  .overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
+
 }

@@ -242,7 +242,6 @@ const WorkingMainPage: React.FC = () => {
       const result = await directoryApi.list(browsingConnection.id, path);
       setCurrentPath(result.path);
       setDirectoryItems(result.items);
-      showInfo('Directory Loaded', `Browsing: ${result.path}`);
     } catch (error) {
       console.error('Error navigating directory:', error);
       showError('Navigation Failed', `Could not access directory: ${path}`);
@@ -316,7 +315,7 @@ const WorkingMainPage: React.FC = () => {
   // If browsing, show directory browser instead
   if (browsingConnection) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="h-screen bg-gray-50 flex flex-col">
         {/* Toast Container */}
         <ToastContainer 
           toasts={toasts} 
@@ -325,7 +324,7 @@ const WorkingMainPage: React.FC = () => {
         />
         
         {/* Browsing Header */}
-        <header className="bg-white shadow-sm border-b">
+        <header className="bg-white shadow-sm border-b flex-shrink-0">
           <div className="w-full px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -353,25 +352,29 @@ const WorkingMainPage: React.FC = () => {
         </header>
 
         {/* Directory Browser Content */}
-        <main className="w-full px-4 py-6">
-          <div className="grid grid-cols-12 gap-6 w-full">
+        <main className="flex-1 flex overflow-hidden">
+          <div className="flex w-full h-full">
             {/* Directory Tree Sidebar */}
-            <div className="col-span-12 lg:col-span-3 xl:col-span-2">
-              <DirectoryTree
-                connectionId={browsingConnection.id}
-                currentPath={currentPath}
-                onPathChange={handleDirectoryNavigation}
-              />
+            <div className="w-80 lg:w-96 xl:w-80 flex-shrink-0 border-r border-gray-200 bg-white h-full overflow-hidden hidden md:block">
+              <div className="h-full p-4">
+                <DirectoryTree
+                  connectionId={browsingConnection.id}
+                  currentPath={currentPath}
+                  onPathChange={handleDirectoryNavigation}
+                />
+              </div>
             </div>
             
             {/* Image Gallery Main Area */}
-            <div className="col-span-12 lg:col-span-9 xl:col-span-10">
-              <ImageGallery
-                connectionId={browsingConnection.id}
-                currentPath={currentPath}
-                onImageSelect={handleImageSelect}
-                onPathChange={handleDirectoryNavigation}
-              />
+            <div className="flex-1 h-full overflow-hidden">
+              <div className="h-full p-4">
+                <ImageGallery
+                  connectionId={browsingConnection.id}
+                  currentPath={currentPath}
+                  onImageSelect={handleImageSelect}
+                  onPathChange={handleDirectoryNavigation}
+                />
+              </div>
             </div>
           </div>
         </main>

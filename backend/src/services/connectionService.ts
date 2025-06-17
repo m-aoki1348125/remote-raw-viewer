@@ -134,7 +134,8 @@ class ConnectionService {
         host: data.host,
         port: data.port,
         username: data.username,
-        password: data.authMethod === 'password' ? data.password || '' : ''
+        password: data.authMethod === 'password' ? data.password || '' : undefined,
+        privateKey: data.authMethod === 'privateKey' ? data.privateKey || undefined : undefined
       };
 
       const success = await this.sshService.testConnection(config);
@@ -184,7 +185,8 @@ class ConnectionService {
         host: connection.host,
         port: connection.port,
         username: connection.username,
-        password: connection.password || ''
+        password: connection.password || '',
+        privateKey: connection.privateKey || undefined
       };
 
       await this.sshService.connect(id, config);

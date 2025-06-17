@@ -115,3 +115,14 @@ install-*.log
 
 # Local development overrides
 .env.override
+
+# Development files (not needed for deployment)
+screenshot/
+test-data/images/*.png
+*.png
+*.jpg
+*.jpeg
+*_thumbnail.*
+
+# Quick start scripts
+quick-start-fixed.sh

@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status: Production Deployment Ready 🚀
 
-**Current Version**: v1.1.0 (Enhanced Image Viewing)
-**Last Updated**: 2025-06-16 20:30 JST
-**Development Phase**: Enhanced Production Ready - Advanced Image Viewing Complete
+**Current Version**: v1.2.2 (Complete Thumbnail & Sort System)
+**Last Updated**: 2025-06-17 19:40 JST
+**Development Phase**: Production Ready with Advanced UI/UX Features
 
 ### Recent Major Achievements
 - ✅ 完全なSSH接続とディレクトリブラウジング機能実装
@@ -29,10 +29,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Docker設定、SSL証明書、自動デプロイスクリプト作成済み**
 - ✅ **🔥 完全なSSH接続フォーム実装（パスワード、ポート、認証方式、テスト接続）**
 - ✅ **🔥 無制限画像ズーム機能完全実装（Ctrl+スクロール、0.1x-50x、パン移動対応）**
+- ✅ **🚀 UV-based自動化開発環境実装（3コマンドセットアップ、統合サーバー管理）**
+- ✅ **⚡ ダウンロード機能完全修復（SSH経由ファイルダウンロード、UIレイアウト改善）**
+- ✅ **🎯 完全なサムネイル表示システム（統一150x150正方形、アスペクト比保持、背景付き配置）**
+- ✅ **📋 多機能ソートシステム（名前・サイズ・更新日時・種別、昇順/降順切り替え）**
+- ✅ **📜 スクロール対応ギャラリー（レスポンシブ高さ制限、カスタムスクロールバー）**
+- ✅ **🔐 Private Key認証完全対応（ペースト入力・ファイル選択両対応）**
+- ✅ **🎨 UI/UX改善（画像とファイル名分離表示、Toast半透明化、全画面ディレクトリツリー）**
 
 ## Development Commands
 
 ### Server Management
+
+#### UV-based自動化環境（推奨）
+```bash
+# 1. UVインストール（初回のみ）
+./install-uv.sh
+
+# 2. 環境セットアップ（初回のみ）
+uv run setup-env
+
+# 3. 開発サーバー起動（日常使用）
+uv run start-dev
+```
+
+#### 従来方法
 ```bash
 # バックエンド起動
 ./scripts/start-backend.sh
@@ -129,6 +150,25 @@ Remote Image Viewer is a web application that runs as a Docker container, allowi
 - **Intuitive controls** with +/- buttons and 9-dot size indicator
 - **Dynamic column adjustment** for 2K/4K displays (up to 32 columns)
 
+**FR-9: Enhanced Thumbnail Display System** ✅ **COMPLETED**
+- **Uniform square thumbnails**: All thumbnails generated as 150x150px squares
+- **Aspect ratio preservation**: Original image proportions maintained with gray background
+- **Distortion-free display**: No image stretching or cropping
+- **ImageMagick optimization**: Background-centered placement for perfect visual consistency
+
+**FR-10: Multi-Criteria Sorting System** ✅ **COMPLETED**
+- **4 sort criteria**: Name (alphabetical), Size (file size), Modified (date/time), Type (directories first)
+- **Bidirectional sorting**: Ascending/descending order with visual indicators
+- **Real-time updates**: Instant sorting when criteria or direction changes
+- **Search integration**: Sorting applies to filtered search results
+- **Natural numeric sorting**: Intelligent file name ordering (file1, file2, file10)
+
+**FR-11: Scrollable Gallery Interface** ✅ **COMPLETED**
+- **Responsive height limits**: 384px (mobile) to 700px (desktop)
+- **Custom scrollbar design**: Thin, semi-transparent with hover effects
+- **Overflow handling**: Vertical scrolling for large image collections
+- **Performance optimized**: Maintains smooth scrolling with 100+ images
+
 ### Non-Functional Requirements
 
 **NFR-1: Performance**
@@ -194,6 +234,9 @@ Remote Image Viewer is a web application that runs as a Docker container, allowi
 - **🎯 Large Image Detail View**: 最大600x600pxでの詳細画像確認機能
 - **🔥 Complete SSH Connection Form**: Password, Port, Auth Method, Test Connection機能完全実装
 - **🔥 Unlimited Image Zoom System**: Ctrl+スクロール、0.1x-50x倍率、パン移動、リアルタイム拡大縮小表示
+- **🎯 Perfect Thumbnail System**: 統一150x150px正方形、アスペクト比保持、ImageMagick背景付き配置
+- **📋 Advanced Sorting Features**: 名前・サイズ・更新日時・種別ソート、昇順/降順切り替え、自然数順対応
+- **📜 Responsive Gallery Scrolling**: モバイル384px〜デスクトップ700px、カスタムスクロールバー、大量画像対応
 
 ### 🔧 Current Technical Stack
 - **Frontend**: React 18 + TypeScript + Tailwind CSS + Vite
@@ -201,7 +244,8 @@ Remote Image Viewer is a web application that runs as a Docker container, allowi
 - **SSH Service**: Real SSH connections with NodeSSH library
 - **UI Framework**: Modern component library with toast system and shortcuts
 - **Architecture**: 3-tier with live SSH-based remote execution
-- **Development Environment**: WSL2 + Interactive development scripts
+- **Development Environment**: UV-based Python automation + WSL2 + Interactive scripts
+- **Automation Tools**: Python UV package manager, automated setup scripts
 - **Test Environment**: Complete SSH server setup with sample RAW files
 
 ### 🚀 Production Features
@@ -223,15 +267,21 @@ remote-raw-viewer/
 │   ├── services/         # SSHService, connectionService, directoryService
 │   ├── controllers/      # Real API controllers for SSH operations
 │   └── routes/           # Express routes for SSH and directory APIs
-├── scripts/              # Individual server startup scripts
+├── scripts/              # Individual server startup scripts + UV automation
+│   ├── setup_environment.py  # UV-based automated environment setup
+│   └── start_development.py  # UV-based integrated development server
 ├── setup-test-server-fixed.sh  # Complete SSH test environment setup
-└── start-dev.sh          # Interactive development menu
+├── install-uv.sh         # UV package manager installation script
+├── pyproject.toml        # Python/UV project configuration
+└── start-dev.sh          # Legacy interactive development menu
 ```
 
 ### 🎯 Core Functionality: COMPLETE ✅
 **All Primary Features Successfully Implemented**
 - ✅ SSH Connection & Directory Browsing
-- ✅ Real Image Thumbnail Display
+- ✅ Perfect Thumbnail Display System (150x150px, aspect ratio preserved)
+- ✅ Advanced Sorting System (Name/Size/Date/Type, Asc/Desc)
+- ✅ Responsive Gallery with Scrolling (384px-700px)
 - ✅ 9-Stage Size Control (8px → 600px)
 - ✅ Fullscreen Responsive Layout
 - ✅ RAW Image Processing
@@ -251,11 +301,20 @@ remote-raw-viewer/
 - **Security**: ファイアウォール設定、SSH Key認証、セキュリティヘッダー
 - **Operations**: 自動バックアップ、ログ監視、サービス管理
 
-### 🚀 Optional Future Enhancements
-- **File Downloads**: Multi-file download and ZIP packaging
+### 🚀 Optional Future Enhancements  
 - **Advanced Features**: 追加のエンタープライズ機能
+- **Enhanced Automation**: より高度な自動化機能
 
-### 🔧 最新の技術的課題解決 (2025-06-16 Session)
+### 🔧 最新の技術的課題解決 (2025-06-16 Sessions)
+
+#### Session 3: UV自動化環境実装
+- **Download Button Functionality**: ダウンロード機能が動作しない問題を修正（connectionService.getSSHClient追加）
+- **UI Layout Issues**: ダウンロードボタンとサムネイルサイズ調整ボタンの重複問題解決
+- **UV Environment Setup**: Python UV-based完全自動化開発環境実装
+- **Development Automation**: 3コマンドでセットアップ完了する統合開発システム構築
+- **Error Handling Enhancement**: 詳細ログ表示とタイムアウト処理改善
+
+#### Session 2: 画像ズーム機能
 - **ConnectionForm Missing Fields**: WorkingMainPageで簡易フォームではなく完全なConnectionFormコンポーネントを使用するよう修正
 - **SSH Connection Form Complete**: Password、Port、Auth Method、Test Connection機能の完全実装確認
 - **Image Zoom Transform Issue**: CSSクラス`max-w-full max-h-full`とtransform scaleの競合問題を解決
@@ -279,3 +338,5 @@ remote-raw-viewer/
 - ✅ **UI/UX Goal**: フルスクリーン対応と柔軟なサイズ調整 → **9段階サイズ実装**
 - ✅ **Enhanced Goal**: SSH接続フォーム完全実装 → **Password/Port/Auth/Test機能完全実装**
 - ✅ **Advanced Goal**: 無制限画像ズーム機能 → **Ctrl+スクロール、0.1x-50x、パン移動完全実装**
+- ✅ **Automation Goal**: 開発環境自動化 → **UV-based 3コマンドセットアップ完全実装**
+- ✅ **Download Goal**: ファイルダウンロード機能 → **SSH経由ダウンロード、UIレイアウト改善完全実装**

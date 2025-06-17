@@ -240,8 +240,8 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-      <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm h-full flex flex-col">
+      <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
@@ -285,7 +285,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({
         </div>
       </div>
       
-      <div className="max-h-80 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {isLoading && rootNodes.length === 0 ? (
           <div className="p-4 text-center space-y-2">
             <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>

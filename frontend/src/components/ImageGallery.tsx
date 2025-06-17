@@ -31,6 +31,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [thumbnailSize, setThumbnailSize] = useState<'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'huge' | 'massive' | 'giant'>('medium');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'modified' | 'type'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const { showSuccess, showError } = useToast();
   const { announce, prefersReducedMotion } = useAccessibility();
 
@@ -96,6 +98,34 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   
   const currentConfig = sizeConfigs[thumbnailSize];
 
+  // Sort images based on selected criteria
+  const sortImages = useCallback((items: ImageWithThumbnail[]): ImageWithThumbnail[] => {
+    return [...items].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+          break;
+        case 'size':
+          comparison = a.size - b.size;
+          break;
+        case 'modified':
+          comparison = new Date(a.modified).getTime() - new Date(b.modified).getTime();
+          break;
+        case 'type':
+          // Directories first, then by name
+          if (a.type !== b.type) {
+            return a.type === 'directory' ? -1 : 1;
+          }
+          comparison = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [sortBy, sortOrder]);
+
   const increaseThumbnailSize = () => {
     const sizes = ['tiny', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge', 'massive', 'giant'] as const;
     const currentIndex = sizes.indexOf(thumbnailSize);
@@ -133,7 +163,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       }));
       
       setImages(itemsWithThumbnails);
-      setFilteredImages(itemsWithThumbnails);
+      setFilteredImages(sortImages(itemsWithThumbnails));
       announce(`Loaded ${itemsWithThumbnails.length} items from ${currentPath}`, 'polite');
 
       // Load thumbnails only for image files
@@ -269,23 +299,28 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
     if (!query.trim()) {
-      setFilteredImages(images);
+      setFilteredImages(sortImages(images));
     } else {
       const filtered = images.filter(item => 
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         (item.extension && item.extension.toLowerCase().includes(query.toLowerCase())) ||
         (item.type === 'directory' && item.name.toLowerCase().includes(query.toLowerCase()))
       );
-      setFilteredImages(filtered);
+      setFilteredImages(sortImages(filtered));
       if (query.trim()) {
         announce(`Found ${filtered.length} matching items`, 'polite');
       }
     }
-  }, [images, announce]);
+  }, [images, announce, sortImages]);
 
   useEffect(() => {
     handleSearch(searchQuery);
   }, [images, searchQuery, handleSearch]);
+
+  // Update filtered images when sort settings change
+  useEffect(() => {
+    setFilteredImages(prevFiltered => sortImages(prevFiltered));
+  }, [sortBy, sortOrder, sortImages]);
 
   const pathSegments = useMemo(() => {
     if (currentPath === '/' || currentPath === '') return [{ name: 'root', path: '/' }];
@@ -429,6 +464,36 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-32">{currentPath}</span>
           </div>
           <div className="flex items-center space-x-2">
+            {/* Sort Control */}
+            <div className="flex items-center space-x-1 bg-white border border-gray-200 px-2 py-1 rounded">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'size' | 'modified' | 'type')}
+                className="text-xs bg-transparent border-none outline-none cursor-pointer"
+                title="Sort by"
+              >
+                <option value="name">Name</option>
+                <option value="size">Size</option>
+                <option value="modified">Modified</option>
+                <option value="type">Type</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="w-4 h-4 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                title={`Sort ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
+              >
+                {sortOrder === 'asc' ? (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            
             {/* Compact Size Control */}
             <div className="flex items-center space-x-1 bg-white border border-gray-200 px-2 py-1 rounded">
               <button
@@ -530,7 +595,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
           </div>
         </div>
       ) : (
-        <div className="p-3">
+        <div className="p-3 max-h-96 md:max-h-[500px] lg:max-h-[600px] xl:max-h-[700px] overflow-y-auto">
           <div 
             className={`grid ${currentConfig.cols} gap-2`}
             role="grid"
@@ -589,9 +654,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 )}
 
                 {/* Enhanced Square Thumbnail */}
-                <div className={`${currentConfig.containerClass} bg-gray-100 flex flex-col mx-auto relative overflow-hidden rounded-lg`}>
+                <div className="flex flex-col mx-auto">
                   {/* Square Image Area */}
-                  <div className="relative w-full flex-1 bg-gray-50 overflow-hidden">
+                  <div className={`${currentConfig.containerClass} bg-gray-100 relative overflow-hidden rounded-lg`}>
                     {item.type === 'directory' ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
                         <div className="w-1/2 h-1/2 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
@@ -618,7 +683,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                         <img
                           src={getImageSrc(item)}
                           alt={item.name}
-                          className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${currentConfig.imageClass} ${item.extension === 'raw' ? 'raw-thumbnail' : ''}`}
+                          className={`absolute inset-0 w-full h-full object-contain transition-all duration-300 group-hover:scale-110 ${currentConfig.imageClass} ${item.extension === 'raw' ? 'raw-thumbnail' : ''}`}
+                          style={{
+                            objectFit: 'contain',
+                            objectPosition: 'center'
+                          }}
                           onLoad={() => console.log(`Image loaded successfully for ${item.name}`)}
                           onError={(e) => {
                             console.error(`Image load error for ${item.name}`);
@@ -659,8 +728,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     )}
                   </div>
                   
-                  {/* Enhanced Label Area */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-1 py-1 border-t border-gray-200">
+                  {/* Enhanced Label Area - Outside of image */}
+                  <div className="bg-white px-1 py-1 mt-1">
                     <div className={`${currentConfig.labelClass} text-gray-700 font-medium truncate text-center leading-tight`} title={item.name}>
                       {item.name}
                     </div>
@@ -672,14 +741,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                   </div>
                 </div>
 
-                {/* Hover Info - Only for Directories */}
-                {item.type === 'directory' && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-blue-600/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <p className="text-xs text-center">
-                      Double-click to open
-                    </p>
-                  </div>
-                )}
 
                 {/* Compact RAW Indicator */}
                 {item.extension === 'raw' && (

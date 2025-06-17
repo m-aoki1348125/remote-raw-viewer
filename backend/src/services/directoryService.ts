@@ -210,8 +210,9 @@ class DirectoryService {
       const magickCheckResult = await ssh.execCommand('which convert 2>/dev/null');
       
       if (magickCheckResult.code === 0) {
-        // Use ImageMagick to convert RAW to thumbnail
-        const thumbnailCommand = `convert -depth 8 -size ${width}x${height} gray:"${imagePath}" -resize 150x150 png:- | base64 2>/dev/null`;
+        // Use ImageMagick to convert RAW to thumbnail with uniform square output
+        // This creates a 150x150 square thumbnail with gray background and centers the image
+        const thumbnailCommand = `convert -depth 8 -size ${width}x${height} gray:"${imagePath}" -resize 150x150 -background gray -gravity center -extent 150x150 png:- | base64 2>/dev/null`;
         const thumbnailResult = await ssh.execCommand(thumbnailCommand);
         
         if (thumbnailResult.code === 0 && thumbnailResult.stdout.trim()) {
