@@ -124,5 +124,6 @@ test-data/images/*.png
 *.jpeg
 *_thumbnail.*
 
-# Quick start scripts
-quick-start-fixed.sh
+# Scripts and UV files moved to subdirectories
+scripts/quick-start*.sh
+uv/

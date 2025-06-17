@@ -44,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 #### UV-based自動化環境（推奨）
 ```bash
 # 1. UVインストール（初回のみ）
-./install-uv.sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. 環境セットアップ（初回のみ）
 uv run setup-env
@@ -62,10 +62,10 @@ uv run start-dev
 ./scripts/start-frontend.sh
 
 # 統合開発環境起動（インタラクティブメニュー）
-./start-dev.sh
+./scripts/start-dev.sh
 
 # SSH テストサーバー起動
-./setup-test-server-fixed.sh
+./scripts/setup-test-server-fixed.sh
 ```
 
 ### Test Environment
@@ -258,22 +258,45 @@ Remote Image Viewer is a web application that runs as a Docker container, allowi
 ### 📁 Project Structure
 ```
 remote-raw-viewer/
-├── frontend/src/
-│   ├── components/ui/     # Toast, Status, Loading components  
-│   ├── hooks/            # useToast, useKeyboardShortcuts, usePerformanceMonitor
-│   ├── pages/            # WorkingMainPage with real SSH integration
-│   └── services/         # API services for SSH connections
-├── backend/src/
-│   ├── services/         # SSHService, connectionService, directoryService
-│   ├── controllers/      # Real API controllers for SSH operations
-│   └── routes/           # Express routes for SSH and directory APIs
-├── scripts/              # Individual server startup scripts + UV automation
-│   ├── setup_environment.py  # UV-based automated environment setup
-│   └── start_development.py  # UV-based integrated development server
-├── setup-test-server-fixed.sh  # Complete SSH test environment setup
-├── install-uv.sh         # UV package manager installation script
-├── pyproject.toml        # Python/UV project configuration
-└── start-dev.sh          # Legacy interactive development menu
+├── CLAUDE.md, README.md          # プロジェクト文書
+├── pyproject.toml, uv.lock       # UV設定（ルート配置）
+├── agent/                        # Python SSH エージェント
+│   ├── src/                     # エージェントコード
+│   └── tests/                   # エージェントテスト
+├── backend/                      # Node.js Express API
+│   ├── src/                     # バックエンドコード
+│   │   ├── services/            # SSHService, connectionService, directoryService
+│   │   ├── controllers/         # API controllers for SSH operations
+│   │   └── routes/              # Express routes for SSH and directory APIs
+│   └── tests/                   # バックエンドテスト
+├── frontend/                     # React + TypeScript UI
+│   ├── src/
+│   │   ├── components/          # UI components (Toast, Status, Loading)
+│   │   ├── hooks/               # useToast, useKeyboardShortcuts, usePerformanceMonitor
+│   │   ├── pages/               # WorkingMainPage with real SSH integration
+│   │   └── services/            # API services for SSH connections
+│   └── tests/                   # フロントエンドテスト
+├── dev-report/                   # 開発レポート集
+│   ├── DEPLOYMENT_REPORT.md     # デプロイメント報告書
+│   ├── BUGFIX_REPORT.md         # バグ修正レポート
+│   └── SSH_SETUP_COMPLETE.md    # SSH設定完了報告
+├── doc/                          # ユーザー向けドキュメント
+│   ├── UserManual.md            # 利用者マニュアル
+│   ├── ProductionDeploymentGuide.md # 本番デプロイガイド
+│   └── QuickStartGuide.md       # クイックスタートガイド
+├── scripts/                      # 全スクリプト統合ディレクトリ
+│   ├── setup_environment.py    # UV-based automated environment setup
+│   ├── start_development.py    # UV-based integrated development server
+│   ├── start-backend.sh         # バックエンド起動スクリプト
+│   ├── start-frontend.sh        # フロントエンド起動スクリプト
+│   ├── start-dev.sh             # Legacy interactive development menu
+│   ├── setup-test-server-fixed.sh # Complete SSH test environment setup
+│   ├── install.sh               # 本番環境インストーラー
+│   └── test-agent.sh            # エージェントテストスクリプト
+├── docker/                       # Docker設定
+├── ssh-keys/                     # SSHテスト用キー
+├── test-data/                    # テストデータ
+└── logs/                         # ログ出力ディレクトリ（空）
 ```
 
 ### 🎯 Core Functionality: COMPLETE ✅
@@ -305,16 +328,24 @@ remote-raw-viewer/
 - **Advanced Features**: 追加のエンタープライズ機能
 - **Enhanced Automation**: より高度な自動化機能
 
-### 🔧 最新の技術的課題解決 (2025-06-16 Sessions)
+### 🔧 最新の技術的課題解決 (2025-06-17 Sessions)
 
-#### Session 3: UV自動化環境実装
+#### Session 4: プロジェクト構造最適化 (2025-06-17)
+- **File Organization**: プロジェクトルートディレクトリの完全整理実施
+- **Directory Structure**: カテゴリ別ファイル配置（dev-report/, scripts/, doc/）
+- **Duplicate File Cleanup**: 重複ファイル（uv/, ログファイル）削除
+- **Path Updates**: 移動後のパス参照を全て修正
+- **Testing Verification**: 整理後の全機能動作テスト完了
+- **Production Ready**: 本番デプロイ用クリーンな構造確立
+
+#### Session 3: UV自動化環境実装 (2025-06-16)
 - **Download Button Functionality**: ダウンロード機能が動作しない問題を修正（connectionService.getSSHClient追加）
 - **UI Layout Issues**: ダウンロードボタンとサムネイルサイズ調整ボタンの重複問題解決
 - **UV Environment Setup**: Python UV-based完全自動化開発環境実装
 - **Development Automation**: 3コマンドでセットアップ完了する統合開発システム構築
 - **Error Handling Enhancement**: 詳細ログ表示とタイムアウト処理改善
 
-#### Session 2: 画像ズーム機能
+#### Session 2: 画像ズーム機能 (2025-06-16)
 - **ConnectionForm Missing Fields**: WorkingMainPageで簡易フォームではなく完全なConnectionFormコンポーネントを使用するよう修正
 - **SSH Connection Form Complete**: Password、Port、Auth Method、Test Connection機能の完全実装確認
 - **Image Zoom Transform Issue**: CSSクラス`max-w-full max-h-full`とtransform scaleの競合問題を解決
